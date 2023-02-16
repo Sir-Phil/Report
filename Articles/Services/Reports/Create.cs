@@ -1,8 +1,10 @@
 ﻿using Articles.Infrastructure;
+using Articles.Infrastructure.CurrentUser;
 using Articles.Infrastructure.SlugConfig;
 using Articles.Models;
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Articles.Services.Reports
 {
@@ -38,14 +40,16 @@ namespace Articles.Services.Reports
         public class Handler : IRequestHandler<Command, ReportDTO>
         {
             private readonly ReportDbContext _reportDbContext;
+            private readonly ICurrentUserAccessor _currentUserAccessor;
 
-            public Handler(ReportDbContext reportDbContext)
+            public Handler(ReportDbContext reportDbContext, ICurrentUserAccessor currentUserAccessor)
             {
                 _reportDbContext = reportDbContext;
+                _currentUserAccessor = currentUserAccessor;
             }
             public async Task<ReportDTO> Handle(Command message, CancellationToken cancellationToken)
             {
-                var author = await _reportDbContext.Persons.FindAsync(cancellationToken);
+                var author = await _reportDbContext.Persons.FirstAsync( x => x.Username == _currentUserAccessor.GetCurrentUserName(), cancellationToken);
                 var tags = new List<Tag>();
                 foreach (var tag in(message.Report.TagList ?? Enumerable.Empty<string>()))
                 {

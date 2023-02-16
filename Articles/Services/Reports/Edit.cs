@@ -12,7 +12,7 @@ namespace Articles.Services.Reports
 {
     public class Edit
     {
-        public class ReportData
+        public class ReportDataEdit
         {
             public string Title { get; set; }
             public string Body { get; set; }
@@ -22,11 +22,14 @@ namespace Articles.Services.Reports
 
         public record Command(Model Model, string Slug) : IRequest<ReportDTO>;
 
-        public record Model(ReportData Report);
+        public record Model(ReportDataEdit Report);
 
         public class CommandValidator : AbstractValidator<Command>
         {
-
+            public CommandValidator()
+            {
+                RuleFor(x => x.Model.Report).NotNull();
+            }
         }
 
         public class Handler : IRequestHandler<Command, ReportDTO>
@@ -77,7 +80,7 @@ namespace Articles.Services.Reports
 
                 // delete the tags that does not exists anymore
                 _reportDbContext.ReportTags.RemoveRange(reportTagsToDelete);
-                await _reportDbContext.SaveChangesAsync();
+                await _reportDbContext.SaveChangesAsync(cancellationToken);
 
                 return new ReportDTO(await _reportDbContext.Reports.GetAllData()
                     .Where(x => x.Slug == report.Slug)
@@ -100,13 +103,13 @@ namespace Articles.Services.Reports
                 return reportTagsToDelete;
             }
 
-            // check which report tag needs to be deleted
+            // check which report tag needs to be added
             static List<ReportTag> GetReportTagsToCreate(Report report, IEnumerable<string> reportTagList)
             {
                 var reportTagsToCreate = new List<ReportTag>();
                 foreach(var tag in reportTagList)
                 {
-                    var rt = report.ReportTags.FirstOrDefault(t => t.TagId == tag);
+                    var rt = report.ReportTags?.FirstOrDefault(t => t.TagId == tag);
                     if (rt == null)
                     {
                         rt = new ReportTag()
