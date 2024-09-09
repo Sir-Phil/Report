@@ -8,7 +8,7 @@ namespace Articles.Infrastructure
         public void Apply(ControllerModel controller)
         {
             var controllerNamespace = controller.Attributes.OfType<RouteAttribute>().FirstOrDefault(); 
-            var apiVersion = controllerNamespace.Template.Split('/').First().ToLowerInvariant() ?? "Default";
+            var apiVersion = controllerNamespace?.Template?.Split('/').First().ToLowerInvariant() ?? "default";
 
             controller.ApiExplorer.GroupName= apiVersion;
         }

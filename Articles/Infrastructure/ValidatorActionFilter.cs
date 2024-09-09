@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace Articles.Infrastructure
 {
-    public class ValidatorActionFilter
+    public class ValidatorActionFilter : IActionFilter 
     {
         private readonly ILogger _logger;
 
@@ -13,15 +13,14 @@ namespace Articles.Infrastructure
             _logger = logger;
         }
 
-        public void OnActionExecuting(ActionExecutedContext filterContext)
+        public void OnActionExecuted(ActionExecutedContext filterContext)
         {
-            
             if (!filterContext.ModelState.IsValid)
             {
                 var result = new ContentResult();
                 var error = new Dictionary<string, string[]>();
 
-                foreach(var valuePair in filterContext.ModelState)
+                foreach (var valuePair in filterContext.ModelState)
                 {
                     error.Add(valuePair.Key, valuePair.Value.Errors.Select(x => x.ErrorMessage).ToArray());
                 }
@@ -33,6 +32,10 @@ namespace Articles.Infrastructure
                 filterContext.HttpContext.Response.StatusCode = 422;//uprocessed entity
                 filterContext.Result = result;
             }
+        }    
+        public void OnActionExecuting(ActionExecutingContext filterContext)
+        {
+         
         }
     }
 }
