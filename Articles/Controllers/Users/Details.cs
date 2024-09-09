@@ -6,21 +6,21 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace Articles.Services.Users
+namespace Articles.Controllers.Users
 {
     public class Details
     {
-        public record Query(string Username) : IRequest<UserDTO>;
+        public record Query(string Username) : IRequest<UserEnvelope>;
 
-        public class QueryHandler : IRequestHandler<Query, UserDTO>
+        public class QueryHandler : IRequestHandler<Query, UserEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
             private readonly IMapper _mapper;
             private readonly IJwtTokenGenerator _jwtTokenGenerator;
-            
+
 
             public QueryHandler(
-                ReportDbContext reportDbContext, 
+                ReportDbContext reportDbContext,
                 IMapper mapper,
                 IJwtTokenGenerator jwtTokenGenerator
                 )
@@ -29,19 +29,19 @@ namespace Articles.Services.Users
                 _mapper = mapper;
                 _jwtTokenGenerator = jwtTokenGenerator;
             }
-            public async Task<UserDTO> Handle(Query message, CancellationToken cancellationToken)
+            public async Task<UserEnvelope> Handle(Query message, CancellationToken cancellationToken)
             {
                 var person = await _reportDbContext.Persons.AsNoTracking()
                     .FirstOrDefaultAsync(x => x.Username == message.Username, cancellationToken);
 
-                if(person == null)
+                if (person == null)
                 {
                     throw new RestException(HttpStatusCode.NotFound, new { User = Constants.NOT_FOUND });
                 }
 
                 var user = _mapper.Map<Models.Person, User>(person);
                 user.Token = _jwtTokenGenerator.CreateToken(person.Username ?? throw new InvalidOperationException());
-                return new UserDTO(user);
+                return new UserEnvelope(user);
             }
         }
     }

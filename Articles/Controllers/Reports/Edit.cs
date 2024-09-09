@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Net;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
     public class Edit
     {
@@ -20,7 +20,7 @@ namespace Articles.Services.Reports
             public string[] TagList { get; set; }
         }
 
-        public record Command(Model Model, string Slug) : IRequest<ReportDTO>;
+        public record Command(Model Model, string Slug) : IRequest<ReportEnvelope>;
 
         public record Model(ReportDataEdit Report);
 
@@ -32,7 +32,7 @@ namespace Articles.Services.Reports
             }
         }
 
-        public class Handler : IRequestHandler<Command, ReportDTO>
+        public class Handler : IRequestHandler<Command, ReportEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
 
@@ -40,14 +40,14 @@ namespace Articles.Services.Reports
             {
                 _reportDbContext = reportDbContext;
             }
-            public async Task<ReportDTO> Handle(Command message, CancellationToken cancellationToken)
+            public async Task<ReportEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
                 var report = await _reportDbContext.Reports
                     .Include(x => x.ReportTags) // includes reports tags since they need to be updated
                     .Where(x => x.Slug == message.Slug)
                     .FirstOrDefaultAsync(cancellationToken);
 
-                if(report == null)
+                if (report == null)
                 {
                     throw new RestException(HttpStatusCode.NotFound, new { Report = Constants.NOT_FOUND });
                 }
@@ -58,12 +58,12 @@ namespace Articles.Services.Reports
                 report.Slug = report.Title.GenerateSlug();
 
                 // list of currently save report tag for the given report
-                var reportTagList = (message.Model.Report.TagList ?? Enumerable.Empty<string>());
+                var reportTagList = message.Model.Report.TagList ?? Enumerable.Empty<string>();
                 var reportTagsToCreate = GetReportTagsToCreate(report, reportTagList);
                 var reportTagsToDelete = GetReportTagsToDelete(report, reportTagList);
 
                 if (_reportDbContext.ChangeTracker.Entries().First(x => x.Entity == report).State == EntityState.Modified
-                    || reportTagsToCreate.Any() 
+                    || reportTagsToCreate.Any()
                     || reportTagsToDelete.Any()
                     )
                 {
@@ -82,7 +82,7 @@ namespace Articles.Services.Reports
                 _reportDbContext.ReportTags.RemoveRange(reportTagsToDelete);
                 await _reportDbContext.SaveChangesAsync(cancellationToken);
 
-                return new ReportDTO(await _reportDbContext.Reports.GetAllData()
+                return new ReportEnvelope(await _reportDbContext.Reports.GetAllData()
                     .Where(x => x.Slug == report.Slug)
                     .FirstOrDefaultAsync(cancellationToken)
                     );
@@ -92,7 +92,7 @@ namespace Articles.Services.Reports
             static List<ReportTag> GetReportTagsToDelete(Report report, IEnumerable<string> reportTagList)
             {
                 var reportTagsToDelete = new List<ReportTag>();
-                foreach(var tag in report.ReportTags)
+                foreach (var tag in report.ReportTags)
                 {
                     var rt = reportTagList.FirstOrDefault(t => t == tag.TagId);
                     if (rt == null)
@@ -107,7 +107,7 @@ namespace Articles.Services.Reports
             static List<ReportTag> GetReportTagsToCreate(Report report, IEnumerable<string> reportTagList)
             {
                 var reportTagsToCreate = new List<ReportTag>();
-                foreach(var tag in reportTagList)
+                foreach (var tag in reportTagList)
                 {
                     var rt = report.ReportTags?.FirstOrDefault(t => t.TagId == tag);
                     if (rt == null)

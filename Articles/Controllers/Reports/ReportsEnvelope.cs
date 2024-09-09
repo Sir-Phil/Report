@@ -1,8 +1,8 @@
 ﻿using Articles.Models;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
-    public class ReportDTOs
+    public class ReportsEnvelope
     {
         public List<Report> Reports { get; set; } = new();
 

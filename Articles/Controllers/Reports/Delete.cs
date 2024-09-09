@@ -5,7 +5,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
     public class Delete
     {

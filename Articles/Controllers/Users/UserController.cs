@@ -1,9 +1,8 @@
 ﻿using Articles.Infrastructure.CurrentUser;
-using Articles.Services.Users;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Articles.Controllers
+namespace Articles.Controllers.Users
 {
     [Route("user")]
     public class UserController
@@ -18,13 +17,13 @@ namespace Articles.Controllers
         }
 
         [HttpGet]
-        public Task<UserDTO> GetCurrent(CancellationToken cancellationToken)
+        public Task<UserEnvelope> GetCurrent(CancellationToken cancellationToken)
         {
             return _mediator.Send(new Details.Query(_currentUserAccessor.GetCurrentUserName() ?? "unkown"));
         }
 
         [HttpPut]
-        public Task<UserDTO> UpdateUser([FromBody] Edit.Command command, CancellationToken cancellationToken)
+        public Task<UserEnvelope> UpdateUser([FromBody] Edit.Command command, CancellationToken cancellationToken)
         {
             return _mediator.Send(command, cancellationToken);
         }

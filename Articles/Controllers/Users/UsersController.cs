@@ -1,11 +1,10 @@
-﻿using Articles.Services.Users;
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Articles.Controllers
+namespace Articles.Controllers.Users
 {
     [Route("users")]
-    public class UsersController 
+    public class UsersController
     {
         private readonly IMediator _mediator;
 
@@ -14,14 +13,14 @@ namespace Articles.Controllers
             _mediator = mediator;
         }
 
-        [HttpPost]
-        public Task<UserDTO> Create([FromBody] Create.Command command, CancellationToken cancellationToken)
+        [HttpPost("create")]
+        public Task<UserEnvelope> Create([FromBody] Create.Command command, CancellationToken cancellationToken)
         {
             return _mediator.Send(command, cancellationToken);
         }
 
-        [HttpPost]
-        public Task<UserDTO> Login([FromBody] Login.Command command, CancellationToken cancellationToken)
+        [HttpPost("login")]
+        public Task<UserEnvelope> Login([FromBody] Login.Command command, CancellationToken cancellationToken)
         {
             return _mediator.Send(command, cancellationToken);
         }

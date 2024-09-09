@@ -1,9 +1,9 @@
 ﻿using Articles.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
-    public static class ReportConfiguration
+    public static class ReportExtensions
     {
         public static IQueryable<Report> GetAllData(this DbSet<Report> reports)
         {

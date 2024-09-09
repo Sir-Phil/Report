@@ -1,4 +1,4 @@
-﻿namespace Articles.Services.Users
+﻿namespace Articles.Controllers.Users
 {
     public class User
     {
@@ -10,5 +10,5 @@
 
     }
 
-    public record UserDTO(User User);
+    public record UserEnvelope(User User);
 }

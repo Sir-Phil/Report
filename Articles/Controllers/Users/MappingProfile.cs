@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 
-namespace Articles.Services.Users
+namespace Articles.Controllers.Users
 {
     public class MappingProfile : Profile
     {

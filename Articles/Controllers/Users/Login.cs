@@ -7,7 +7,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace Articles.Services.Users
+namespace Articles.Controllers.Users
 {
     public class Login
     {
@@ -18,7 +18,7 @@ namespace Articles.Services.Users
 
         }
 
-        public record Command(UserDataLogin User) : IRequest<UserDTO>;
+        public record Command(UserDataLogin User) : IRequest<UserEnvelope>;
 
         public class CommandValidator : AbstractValidator<Command>
         {
@@ -29,7 +29,7 @@ namespace Articles.Services.Users
                 RuleFor(x => x.User.Password).NotNull().NotEmpty();
             }
         }
-        public class Handler : IRequestHandler<Command, UserDTO>
+        public class Handler : IRequestHandler<Command, UserEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
             private readonly IMapper _mapper;
@@ -37,7 +37,7 @@ namespace Articles.Services.Users
             private readonly IPasswordHasher _passwordHasher;
 
             public Handler(
-                ReportDbContext reportDbContext, 
+                ReportDbContext reportDbContext,
                 IMapper mapper,
                 IJwtTokenGenerator jwtTokenGenerator,
                 IPasswordHasher passwordHasher
@@ -45,25 +45,25 @@ namespace Articles.Services.Users
             {
                 _reportDbContext = reportDbContext;
                 _mapper = mapper;
-               _jwtTokenGenerator = jwtTokenGenerator;
+                _jwtTokenGenerator = jwtTokenGenerator;
                 _passwordHasher = passwordHasher;
             }
-            public async Task<UserDTO> Handle(Command message, CancellationToken cancellationToken)
+            public async Task<UserEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
                 var person = await _reportDbContext.Persons.Where(x => x.Email == message.User.Email).SingleOrDefaultAsync(cancellationToken);
-                if(person == null)
+                if (person == null)
                 {
                     throw new RestException(HttpStatusCode.Unauthorized, new { Error = "Invalid Email / Password." });
                 }
 
-                if (!person.Hash.SequenceEqual(await _passwordHasher.Hash(message.User.Password ?? throw new InvalidOperationException(), person.Salt))) 
+                if (!person.Hash.SequenceEqual(await _passwordHasher.Hash(message.User.Password ?? throw new InvalidOperationException(), person.Salt)))
                 {
                     throw new RestException(HttpStatusCode.Unauthorized, new { Error = "Invalid Email / Password" });
                 }
 
                 var user = _mapper.Map<Models.Person, User>(person);
                 user.Token = _jwtTokenGenerator.CreateToken(person.Username ?? throw new InvalidOperationException());
-                return new UserDTO(user);
+                return new UserEnvelope(user);
             }
         }
     }

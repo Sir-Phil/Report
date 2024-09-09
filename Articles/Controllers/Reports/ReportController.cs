@@ -1,9 +1,11 @@
-﻿using Articles.Services.Reports;
+﻿
+using Articles.Infrastructure.Security;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 
-namespace Articles.Controllers
+namespace Articles.Controllers.Reports
 {
     [Route("reports")]
     public class ReportController : Controller
@@ -16,13 +18,13 @@ namespace Articles.Controllers
         }
 
         [HttpGet]
-        public async Task<ReportDTOs> Get([FromQuery] string tag,[FromQuery] string author, [FromQuery] string favorited, [FromQuery] int? limit, [FromQuery] int? offset, CancellationToken cancellationToken)
+        public async Task<ReportsEnvelope> Get([FromQuery] string tag, [FromQuery] string author, [FromQuery] string favorited, [FromQuery] int? limit, [FromQuery] int? offset, CancellationToken cancellationToken)
         {
             return await _mediator.Send(new Fetch.Query(tag, author, favorited, limit, offset), cancellationToken);
         }
 
         [HttpGet("feed")]
-        public Task<ReportDTOs> GetFeed([FromQuery] string tag, [FromQuery] string author, [FromQuery] string favorited, [FromQuery] int? limit, [FromQuery] int? offset, CancellationToken cancellationToken)
+        public Task<ReportsEnvelope> GetFeed([FromQuery] string tag, [FromQuery] string author, [FromQuery] string favorited, [FromQuery] int? limit, [FromQuery] int? offset, CancellationToken cancellationToken)
         {
             return _mediator.Send(new Fetch.Query(tag, author, favorited, limit, offset)
             {
@@ -31,24 +33,27 @@ namespace Articles.Controllers
         }
 
         [HttpGet("{slug}")]
-        public Task<ReportDTO> Get(string slug, CancellationToken cancellationToken)
+        public Task<ReportEnvelope> Get(string slug, CancellationToken cancellationToken)
         {
             return _mediator.Send(new Details.Query(slug), cancellationToken);
         }
 
-        [HttpPost] 
-        public Task<ReportDTO> Create([FromBody] Create.Command command, CancellationToken cancellationToken)
+        [HttpPost]
+        [Authorize(AuthenticationSchemes = JwtIssueOptions.Schemes)]
+        public Task<ReportEnvelope> Create([FromBody] Create.Command command, CancellationToken cancellationToken)
         {
             return _mediator.Send(command, cancellationToken);
         }
 
         [HttpPut("{slug}")]
-        public Task<ReportDTO> Edit(string slug, [FromBody] Edit.Model model, CancellationToken cancellationToken)
+        [Authorize(AuthenticationSchemes =JwtIssueOptions.Schemes)]
+        public Task<ReportEnvelope> Edit(string slug, [FromBody] Edit.Model model, CancellationToken cancellationToken)
         {
             return _mediator.Send(new Edit.Command(model, slug), cancellationToken);
         }
 
         [HttpDelete("{slug}")]
+        [Authorize(AuthenticationSchemes =JwtIssueOptions.Schemes)]
         public Task Delete(string slug, CancellationToken cancellationToken)
         {
             return _mediator.Send(new Delete.Command(slug), cancellationToken);

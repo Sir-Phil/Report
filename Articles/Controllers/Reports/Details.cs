@@ -5,11 +5,11 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
     public class Details
     {
-        public record Query(string Slug) : IRequest<ReportDTO>;
+        public record Query(string Slug) : IRequest<ReportEnvelope>;
 
         public class QueryValidator : AbstractValidator<Query>
         {
@@ -19,7 +19,7 @@ namespace Articles.Services.Reports
             }
         }
 
-        public class QueryHandler : IRequestHandler<Query, ReportDTO>
+        public class QueryHandler : IRequestHandler<Query, ReportEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
 
@@ -27,7 +27,7 @@ namespace Articles.Services.Reports
             {
                 _reportDbContext = reportDbContext;
             }
-            public async Task<ReportDTO> Handle(Query message, CancellationToken cancellationToken)
+            public async Task<ReportEnvelope> Handle(Query message, CancellationToken cancellationToken)
             {
                 var report = await _reportDbContext.Reports.GetAllData().FirstOrDefaultAsync
                     (x => x.Slug == message.Slug, cancellationToken);
@@ -39,7 +39,7 @@ namespace Articles.Services.Reports
                         Report = Constants.NOT_FOUND
                     });
                 }
-                return new ReportDTO(report);
+                return new ReportEnvelope(report);
             }
         }
     }

@@ -1,10 +1,14 @@
 ﻿using Articles.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using System.Data;
 
 namespace Articles.Infrastructure
 {
     public class ReportDbContext : DbContext
     {
+        private IDbContextTransaction _currentTransaction;
+
         public ReportDbContext(DbContextOptions<ReportDbContext> options) 
             : base(options)
         {
@@ -58,5 +62,55 @@ namespace Articles.Infrastructure
 
         }
 
+        #region Handling of Transactions
+        public void BeginTransaction()
+        {
+            if (_currentTransaction != null)
+            {
+                return;
+            }
+            if (!Database.IsInMemory())
+            {
+                _currentTransaction = Database.BeginTransaction(IsolationLevel.ReadCommitted);
+            }
+        }
+
+        public void CommitTransaction()
+        {
+            try
+            {
+                _currentTransaction.Commit();
+            }
+            catch
+            {
+                RollbackTransaction();
+                throw;
+            }
+            finally
+            {
+                if (_currentTransaction != null)
+                {
+                    _currentTransaction.Dispose();
+                    _currentTransaction = null;
+                }
+            }
+        }
+
+        public void RollbackTransaction()
+        {
+            try
+            {
+                _currentTransaction.Rollback();
+            }
+            finally
+            {
+                if (_currentTransaction != null)
+                {
+                    _currentTransaction.Dispose();
+                    _currentTransaction = null;
+                }
+            }
+        }
+        #endregion
     }
 }

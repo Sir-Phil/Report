@@ -8,7 +8,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
-namespace Articles.Services.Users
+namespace Articles.Controllers.Users
 {
     public class Create
     {
@@ -19,7 +19,7 @@ namespace Articles.Services.Users
             public string Password { get; set; }
         }
 
-        public record Command(UserData User) : IRequest<UserDTO>;
+        public record Command(UserData User) : IRequest<UserEnvelope>;
 
         public class CommandValidator : AbstractValidator<Command>
         {
@@ -30,7 +30,7 @@ namespace Articles.Services.Users
                 RuleFor(x => x.User.Password).NotNull().NotEmpty();
             }
         }
-        public class Handler : IRequestHandler<Command, UserDTO>
+        public class Handler : IRequestHandler<Command, UserEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
             private readonly IMapper _mapper;
@@ -38,26 +38,26 @@ namespace Articles.Services.Users
             private readonly IJwtTokenGenerator _jwtTokenGenerator;
 
             public Handler(
-                ReportDbContext reportDbContext, 
+                ReportDbContext reportDbContext,
                 IMapper mapper,
                 IPasswordHasher passwordHasher,
                 IJwtTokenGenerator jwtTokenGenerator
                 )
             {
                 _reportDbContext = reportDbContext;
-               _mapper = mapper;
-               _passwordHasher = passwordHasher;
+                _mapper = mapper;
+                _passwordHasher = passwordHasher;
                 _jwtTokenGenerator = jwtTokenGenerator;
             }
-            public async Task<UserDTO> Handle(Command message, CancellationToken cancellationToken)
+            public async Task<UserEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
-                if (await _reportDbContext.Persons.Where(x => x.Username == message.User.Username).AnyAsync(cancellationToken)) 
+                if (await _reportDbContext.Persons.Where(x => x.Username == message.User.Username).AnyAsync(cancellationToken))
                 {
                     throw new RestException(HttpStatusCode.BadRequest, new { Username = Constants.IN_USE });
                 }
                 if (await _reportDbContext.Persons.Where(x => x.Email == message.User.Email).AnyAsync(cancellationToken))
                 {
-                    throw new RestException(HttpStatusCode.BadRequest, new {Email = Constants.IN_USE}); 
+                    throw new RestException(HttpStatusCode.BadRequest, new { Email = Constants.IN_USE });
                 }
 
                 var salt = Guid.NewGuid().ToByteArray();
@@ -74,7 +74,7 @@ namespace Articles.Services.Users
 
                 var user = _mapper.Map<Person, User>(person);
                 user.Token = _jwtTokenGenerator.CreateToken(person.Username ?? throw new InvalidOperationException());
-                return new UserDTO(user);
+                return new UserEnvelope(user);
             }
         }
     }

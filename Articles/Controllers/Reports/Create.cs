@@ -6,7 +6,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
     public class Create
     {
@@ -14,7 +14,7 @@ namespace Articles.Services.Reports
         {
             public string Title { get; set; }
             public string Body { get; set; }
-            public string  Description { get; set; }
+            public string Description { get; set; }
             public string[] TagList { get; set; }
         }
 
@@ -24,11 +24,11 @@ namespace Articles.Services.Reports
             {
                 RuleFor(x => x.Title).NotEmpty();
                 RuleFor(x => x.Body).NotEmpty();
-                RuleFor(x =>x.Description).NotEmpty();
+                RuleFor(x => x.Description).NotEmpty();
             }
         }
 
-        public record Command(ReportData Report): IRequest<ReportDTO>;
+        public record Command(ReportData Report) : IRequest<ReportEnvelope>;
 
         public class CommandValidator : AbstractValidator<Command>
         {
@@ -37,7 +37,7 @@ namespace Articles.Services.Reports
                 RuleFor(x => x.Report).NotNull().SetValidator(new ReportDataValiadator());
             }
         }
-        public class Handler : IRequestHandler<Command, ReportDTO>
+        public class Handler : IRequestHandler<Command, ReportEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
             private readonly ICurrentUserAccessor _currentUserAccessor;
@@ -47,11 +47,11 @@ namespace Articles.Services.Reports
                 _reportDbContext = reportDbContext;
                 _currentUserAccessor = currentUserAccessor;
             }
-            public async Task<ReportDTO> Handle(Command message, CancellationToken cancellationToken)
+            public async Task<ReportEnvelope> Handle(Command message, CancellationToken cancellationToken)
             {
-                var author = await _reportDbContext.Persons.FirstAsync( x => x.Username == _currentUserAccessor.GetCurrentUserName(), cancellationToken);
+                var author = await _reportDbContext.Persons.FirstAsync(x => x.Username == _currentUserAccessor.GetCurrentUserName(), cancellationToken);
                 var tags = new List<Tag>();
-                foreach (var tag in(message.Report.TagList ?? Enumerable.Empty<string>()))
+                foreach (var tag in message.Report.TagList ?? Enumerable.Empty<string>())
                 {
                     var t = await _reportDbContext.Tags.FindAsync(tag);
                     if (t == null)
@@ -84,7 +84,7 @@ namespace Articles.Services.Reports
                 }), cancellationToken);
 
                 await _reportDbContext.SaveChangesAsync(cancellationToken);
-                return new ReportDTO(report);
+                return new ReportEnvelope(report);
             }
         }
     }

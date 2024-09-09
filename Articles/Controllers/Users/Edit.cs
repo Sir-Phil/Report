@@ -6,11 +6,11 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Articles.Services.Users
+namespace Articles.Controllers.Users
 {
     public class Edit
     {
-        public class UserDataEdit
+        public class UserData
         {
             public string Username { get; set; }
             public string Email { get; set; }
@@ -19,7 +19,7 @@ namespace Articles.Services.Users
             public string Image { get; set; }
         }
 
-        public record Command(UserDataEdit User) : IRequest<UserDTO>;
+        public record Command(UserData User) : IRequest<UserEnvelope>;
         public class CommandValidator : AbstractValidator<Command>
         {
             public CommandValidator()
@@ -27,25 +27,25 @@ namespace Articles.Services.Users
                 RuleFor(x => x.User).NotNull();
             }
         }
-        public class Handler : IRequestHandler<Command, UserDTO>
+        public class Handler : IRequestHandler<Command, UserEnvelope>
         {
             private readonly ReportDbContext _reporDbContext;
             private readonly ICurrentUserAccessor _currentUserAccessor;
             private readonly IPasswordHasher _passwordHasher;
             private readonly IMapper _mapper;
 
-            public Handler(ReportDbContext reporDbContext, 
+            public Handler(ReportDbContext reporDbContext,
                 ICurrentUserAccessor currentUserAccessor,
                 IPasswordHasher passwordHasher,
                 IMapper mapper
                 )
             {
                 _reporDbContext = reporDbContext;
-               _currentUserAccessor = currentUserAccessor;
+                _currentUserAccessor = currentUserAccessor;
                 _passwordHasher = passwordHasher;
                 _mapper = mapper;
             }
-            public async Task<UserDTO> Handle(Command mesaage, CancellationToken cancellationToken)
+            public async Task<UserEnvelope> Handle(Command mesaage, CancellationToken cancellationToken)
             {
                 var currentUserName = _currentUserAccessor.GetCurrentUserName();
                 var person = await _reporDbContext.Persons.Where(x => x.Username == currentUserName).FirstOrDefaultAsync(cancellationToken);
@@ -55,7 +55,7 @@ namespace Articles.Services.Users
                 person.Bio = mesaage.User.Bio ?? person.Bio;
                 person.Image = mesaage.User.Image ?? person.Image;
 
-                if(!string.IsNullOrWhiteSpace(mesaage.User.Password))
+                if (!string.IsNullOrWhiteSpace(mesaage.User.Password))
                 {
                     var salt = Guid.NewGuid().ToByteArray();
                     person.Hash = await _passwordHasher.Hash(mesaage.User.Password, salt);
@@ -64,7 +64,7 @@ namespace Articles.Services.Users
 
                 await _reporDbContext.SaveChangesAsync(cancellationToken);
 
-                return new UserDTO(_mapper.Map<Models.Person, User>(person));
+                return new UserEnvelope(_mapper.Map<Models.Person, User>(person));
             }
         }
     }

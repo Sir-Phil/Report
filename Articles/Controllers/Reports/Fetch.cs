@@ -3,15 +3,15 @@ using Articles.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace Articles.Services.Reports
+namespace Articles.Controllers.Reports
 {
     public class Fetch
     {
         public record Query(
-            string Tag,string Author, string FavoritesUsername, int? Limit, int? Offset,
-            bool iSFeed = false) : IRequest<ReportDTOs>;
+            string Tag, string Author, string FavoritesUsername, int? Limit, int? Offset,
+            bool iSFeed = false) : IRequest<ReportsEnvelope>;
 
-        public class QueryHandler : IRequestHandler<Query, ReportDTOs>
+        public class QueryHandler : IRequestHandler<Query, ReportsEnvelope>
         {
             private readonly ReportDbContext _reportDbContext;
 
@@ -20,7 +20,7 @@ namespace Articles.Services.Reports
                 _reportDbContext = reportDbContext;
             }
 
-            public async Task<ReportDTOs> Handle(Query message, CancellationToken cancellationToken)
+            public async Task<ReportsEnvelope> Handle(Query message, CancellationToken cancellationToken)
             {
                 IQueryable<Report> queryable = _reportDbContext.Reports.GetAllData();
 
@@ -33,33 +33,33 @@ namespace Articles.Services.Reports
                     }
                     else
                     {
-                        return new ReportDTOs();
+                        return new ReportsEnvelope();
                     }
                 }
 
                 if (!string.IsNullOrWhiteSpace(message.Author))
                 {
                     var author = await _reportDbContext.Persons.FirstOrDefaultAsync(x => x.Username == message.Author, cancellationToken);
-                    if(author != null)
+                    if (author != null)
                     {
                         queryable = queryable.Where(x => x.Author == author);
                     }
                     else
                     {
-                        return new ReportDTOs();
+                        return new ReportsEnvelope();
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(message.FavoritesUsername)) 
+                if (!string.IsNullOrWhiteSpace(message.FavoritesUsername))
                 {
-                    var author = await _reportDbContext.Persons.FirstOrDefaultAsync(x => x.Username == message.FavoritesUsername , cancellationToken);
+                    var author = await _reportDbContext.Persons.FirstOrDefaultAsync(x => x.Username == message.FavoritesUsername, cancellationToken);
                     if (author != null)
                     {
                         queryable = queryable.Where(x => x.ReportFavorites.Any(y => y.PersonId == author.PersonId));
                     }
                     else
                     {
-                        return new ReportDTOs();
+                        return new ReportsEnvelope();
                     }
 
                 }
@@ -71,7 +71,7 @@ namespace Articles.Services.Reports
                     .AsNoTracking()
                     .ToListAsync(cancellationToken);
 
-                return new ReportDTOs()
+                return new ReportsEnvelope()
                 {
                     Reports = report,
                     ReportCount = queryable.Count()
